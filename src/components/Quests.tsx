@@ -1,100 +1,133 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { Lock, Star, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Lock, ChevronRight, ArrowLeft, Book, CheckCircle2, FileText } from "lucide-react";
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 40 },
+  hidden: { opacity: 0, y: 20 },
   visible: (i: number) => ({
     opacity: 1, y: 0,
-    transition: { delay: i * 0.12, duration: 0.6, ease: [0.22, 1, 0.36, 1] as const },
+    transition: { delay: i * 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] },
   }),
 };
 
-const courses = [
-  { id: 1, title: "Fullstack Python", progress: 65, xp: 500, status: "progress", tag: "Dev" },
-  { id: 2, title: "Advanced AI", progress: 0, xp: 800, status: "locked", tag: "Dev" },
-  { id: 3, title: "Excel Basics", progress: 100, xp: 300, status: "completed", tag: "Design" },
-  { id: 4, title: "UI/UX Principles", progress: 30, xp: 450, status: "progress", tag: "Design" },
+// Conteúdo apenas do Excel
+const courseDatabase = {
+  1: { // ID do Excel
+    description: "Aprenda a organizar dados e criar cálculos automatizados do zero.",
+    modules: [
+      { title: "O que é uma Célula?", content: "A célula é a unidade básica do Excel. É o encontro de uma Coluna (Letra) com uma Linha (Número), como A1 ou B5." },
+      { title: "Operações Matemáticas", content: "Sempre comece com '='. Para somar valores, use a lógica simples: =10+20 ou referencie células: =A1+B1." },
+      { title: "Funções de Atalho", content: "A função =SOMA(A1:A10) permite somar um intervalo inteiro rapidamente sem fórmulas complexas." },
+    ]
+  }
+};
+
+const initialCourses = [
+  { id: 1, title: "Excel Básico", progress: 100, xp: 300, status: "completed", tag: "Design" },
+  { id: 2, title: "Microsoft Word", progress: 0, xp: 250, status: "locked", tag: "Design", comingSoon: true },
 ];
 
-const filters = ["All", "Dev", "Design"];
-
-const skillNodes = ["HTML", "CSS", "JS", "React", "Node", "DB"];
-
 export default function Quests() {
-  const [filter, setFilter] = useState("All");
-  const filtered = filter === "All" ? courses : courses.filter(c => c.tag === filter);
+  const [activeCourse, setActiveCourse] = useState<any>(null);
 
   return (
-    <div className="space-y-6">
-      <motion.h1 className="text-3xl font-bold" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        Active Quest Lines
-      </motion.h1>
+    <div className="min-h-screen bg-[#09090b] text-zinc-100 p-6 font-sans">
+      <AnimatePresence mode="wait">
+        {!activeCourse ? (
+          <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="max-w-4xl mx-auto space-y-8">
+            <header className="space-y-2">
+              <h1 className="text-4xl font-black italic tracking-tighter uppercase">Quest Lines</h1>
+              <p className="text-zinc-500 text-sm font-medium">Selecione um módulo para iniciar sua jornada de aprendizado.</p>
+            </header>
 
-      <div className="flex gap-2">
-        {filters.map(f => (
-          <button key={f} onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-              filter === f ? "bg-primary text-primary-foreground neon-glow-purple" : "glass-card text-muted-foreground hover:text-foreground"
-            }`}>
-            {f}
-          </button>
-        ))}
-      </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {initialCourses.map((c, i) => (
+                <motion.div key={c.id}
+                  className={`glass-card p-6 space-y-4 relative overflow-hidden transition-all duration-300 ${c.status === "locked" ? "grayscale opacity-50" : "hover:border-primary/50"}`}
+                  variants={fadeUp} initial="hidden" animate="visible" custom={i}>
+                  
+                  {c.comingSoon && (
+                    <div className="absolute top-3 right-3 bg-zinc-800 text-[10px] px-2 py-0.5 rounded text-zinc-400 font-bold border border-zinc-700">
+                      EM BREVE
+                    </div>
+                  )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filtered.map((c, i) => (
-          <motion.div key={c.id}
-            className={`glass-card p-5 space-y-3 ${c.status === "completed" ? "gold-border border" : ""} ${c.status === "locked" ? "opacity-50" : ""}`}
-            variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={i}>
-            <div className="flex justify-between items-start">
-              <h3 className="font-bold">{c.title}</h3>
-              {c.status === "locked" && <Lock className="w-5 h-5 text-muted-foreground" />}
-              {c.status === "completed" && (
-                <div className="flex gap-0.5">{[1, 2, 3].map(s => <Star key={s} className="w-4 h-4 fill-neon-gold text-neon-gold" />)}</div>
-              )}
-            </div>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold tracking-widest text-primary mb-1 block">{c.tag}</span>
+                      <h3 className="font-bold text-xl">{c.title}</h3>
+                    </div>
+                    {c.status === "locked" ? <Lock className="w-5 h-5 text-zinc-500" /> : <Book className="w-5 h-5 text-primary" />}
+                  </div>
 
-            {c.status !== "locked" && (
-              <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
-                <div className={`h-full rounded-full ${c.status === "completed" ? "bg-neon-gold" : "xp-bar-fill"}`}
-                  style={{ width: `${c.progress}%` }} />
-              </div>
-            )}
+                  <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-1000 ${c.status === "completed" ? "bg-primary" : "xp-bar-fill"}`}
+                      style={{ width: `${c.progress}%` }} />
+                  </div>
 
-            <div className="flex justify-between items-center">
-              <span className="text-xs font-mono neon-text-green">+{c.xp} XP</span>
-              {c.status === "progress" && (
-                <button className="text-xs px-3 py-1 rounded-md bg-primary text-primary-foreground font-semibold">
-                  Continue <ChevronRight className="inline w-3 h-3" />
-                </button>
-              )}
-              {c.status === "completed" && (
-                <span className="text-xs px-3 py-1 rounded-md bg-neon-gold/20 text-neon-gold font-semibold">Completed</span>
-              )}
+                  <div className="flex justify-between items-center pt-2">
+                    <span className="text-xs font-mono neon-text-green">+{c.xp} XP</span>
+                    {c.status !== "locked" ? (
+                      <button 
+                        onClick={() => setActiveCourse(c)}
+                        className="text-xs px-4 py-2 rounded bg-primary text-primary-foreground font-bold hover:scale-105 transition-transform flex items-center gap-1">
+                        Acessar Conteúdo <ChevronRight className="w-3 h-3" />
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-1 text-zinc-600 text-[10px] font-bold uppercase">
+                        Bloqueado
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
             </div>
           </motion.div>
-        ))}
-      </div>
-
-      {/* Skill Tree */}
-      <motion.div className="glass-card p-6 mt-8" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={5}>
-        <h2 className="text-lg font-bold mb-4">Skill Tree Progress</h2>
-        <div className="flex items-center gap-1 overflow-x-auto pb-2">
-          {skillNodes.map((node, i) => (
-            <div key={node} className="flex items-center">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                i < 4 ? "bg-primary text-primary-foreground neon-glow-purple" : "bg-muted text-muted-foreground"
-              }`}>
-                {node}
+        ) : (
+          /* ABA DE IDENTIFICAÇÃO DO CURSO */
+          <motion.div key="content" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="max-w-3xl mx-auto">
+            <div className="flex items-center justify-between mb-8">
+              <button onClick={() => setActiveCourse(null)} className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group">
+                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> 
+                <span className="text-sm font-bold uppercase tracking-wider">Voltar</span>
+              </button>
+              <div className="text-right">
+                <h2 className="text-2xl font-bold text-white">{activeCourse.title}</h2>
+                <p className="text-primary text-[10px] font-mono uppercase tracking-[0.2em]">Módulo Ativo: {activeCourse.id}</p>
               </div>
-              {i < skillNodes.length - 1 && (
-                <div className={`w-8 h-0.5 ${i < 3 ? "bg-primary" : "bg-muted"}`} />
-              )}
             </div>
-          ))}
-        </div>
-      </motion.div>
+
+            <div className="glass-card p-8 border-t-2 border-primary/30 min-h-[400px]">
+              <div className="space-y-8">
+                <div className="flex gap-4 items-start bg-primary/5 p-4 rounded-lg border border-primary/10">
+                  <FileText className="text-primary shrink-0 w-6 h-6" />
+                  <p className="text-zinc-300 leading-relaxed italic">
+                    {courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.description}
+                  </p>
+                </div>
+
+                <div className="space-y-6">
+                  {courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.modules.map((mod, idx) => (
+                    <div key={idx} className="p-6 rounded-xl border border-white/5 bg-white/5">
+                      <h4 className="text-lg font-bold text-white mb-2 flex items-center gap-3">
+                        <span className="w-6 h-6 rounded bg-primary/20 text-primary text-xs flex items-center justify-center font-mono">0{idx + 1}</span>
+                        {mod.title}
+                      </h4>
+                      <p className="text-zinc-400 pl-9 leading-relaxed">
+                        {mod.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <button onClick={() => setActiveCourse(null)} className="w-full py-4 bg-primary text-white font-black rounded-xl neon-glow-purple mt-6 hover:brightness-110 transition-all flex items-center justify-center gap-2 uppercase tracking-widest">
+                  Concluir Leitura <CheckCircle2 className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

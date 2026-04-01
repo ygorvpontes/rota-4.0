@@ -1,27 +1,37 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useState, useEffect } from "react";
+import Login from "./pages/Login"; // Ajuste se o seu Login estiver em /pages
 import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+  useEffect(() => {
+    // Checa se a chave existe na memória do navegador
+    const isLogged = localStorage.getItem("rota40_auth");
+    if (isLogged === "true") {
+      setIsAuthenticated(true);
+    }
+    setIsLoading(false);
+  }, []);
 
-export default App;
+  // Tela preta de carregamento para não piscar o layout
+  if (isLoading) {
+    return <div className="min-h-screen bg-[#0a0a0f]"></div>;
+  }
+
+  // Se não estiver logado, mostra a tela de Login
+  if (!isAuthenticated) {
+    return <Login onLogin={() => setIsAuthenticated(true)} />;
+  }
+
+  // Se estiver logado, mostra a plataforma e passa a função de Sair
+  return (
+    <Index 
+      onLogout={() => {
+        localStorage.removeItem("rota40_auth");
+        setIsAuthenticated(false);
+      }} 
+    />
+  );
+}

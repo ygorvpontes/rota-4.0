@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Home, Target, Headphones, Trophy, User } from "lucide-react";
+import { Home, Target, Headphones, Trophy, User, LogOut } from "lucide-react";
 import Dashboard from "@/components/Dashboard";
 import Quests from "@/components/Quests";
 import PodcastView from "@/components/PodcastView";
@@ -20,7 +20,12 @@ const views: Record<string, React.FC> = {
   rankings: Rankings,
 };
 
-export default function Index() {
+// Definição da interface para as propriedades do componente
+interface IndexProps {
+  onLogout: () => void;
+}
+
+export default function Index({ onLogout }: IndexProps) {
   const [active, setActive] = useState("home");
   const View = views[active];
 
@@ -30,6 +35,7 @@ export default function Index() {
       <motion.aside
         className="fixed left-0 top-0 bottom-0 w-20 glass-card rounded-none border-r border-t-0 border-b-0 border-l-0 flex flex-col items-center py-6 z-40"
         initial={{ x: -80 }} animate={{ x: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
+        
         {/* Logo */}
         <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-extrabold text-sm mb-10 neon-glow-purple">
           R4
@@ -48,6 +54,15 @@ export default function Index() {
             </button>
           ))}
         </nav>
+
+        {/* Botão de Logout adicionado no final da Sidebar */}
+        <button 
+          onClick={onLogout}
+          className="w-12 h-12 rounded-xl flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all mt-auto mb-2"
+          title="Sair"
+        >
+          <LogOut className="w-5 h-5" />
+        </button>
       </motion.aside>
 
       {/* Main */}

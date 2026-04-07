@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Zap, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
+import { User, Lock, ArrowRight, Loader2 } from "lucide-react";
 
 export default function Login({ onLogin }: { onLogin: () => void }) {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -13,8 +13,10 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
 
     // O "Sabor Login": Finge que está chamando uma API com um atraso de 1.5s
     setTimeout(() => {
-      // Salva no Local Storage para manter o usuário logado se ele atualizar a página
+      // Salva no Local Storage para manter o usuário logado e guarda o nome dele!
       localStorage.setItem("rota40_auth", "true");
+      localStorage.setItem("rota40_username", username);
+      
       onLogin(); // Avisa o App.tsx que logou com sucesso
     }, 1500);
   };
@@ -33,7 +35,11 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
       >
         {/* Header do Login */}
         <div className="flex flex-col items-center mb-8 text-center">
-          <img src="/rota-icon.png" alt="" className="w-32 h-32 object-contain mb-4 drop-shadow-[0_0_25px_rgba(168,85,247,0.6)]" />
+          <img 
+            src="/rota-icon.png" 
+            alt="Logo Rota 4.0" 
+            className="w-32 h-32 object-contain mb-4 drop-shadow-[0_0_25px_rgba(168,85,247,0.6)]" 
+          />
           <h1 className="text-3xl font-bold mb-2">Rota 4.0</h1>
           <p className="text-gray-400 text-sm">O seu GPS para o futuro do trabalho.</p>
         </div>
@@ -41,15 +47,16 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
         {/* Formulário */}
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-4">
-            {/* Input Email */}
+            
+            {/* Input Usuário */}
             <div className="relative group">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-purple-400 transition-colors" />
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-purple-400 transition-colors" />
               <input 
-                type="email" 
+                type="text" 
                 required
-                placeholder="E-mail"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Nome de Usuário"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="w-full bg-[#0a0a0f]/50 border border-purple-500/20 rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all"
               />
             </div>

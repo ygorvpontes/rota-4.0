@@ -1,34 +1,72 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, ChevronRight, ArrowLeft, Book, CheckCircle2, FileText } from "lucide-react";
+import { Lock, ChevronRight, ArrowLeft, Book, CheckCircle2, FileText, PlayCircle } from "lucide-react";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
-  visible: (i: number) => ({
-    opacity: 1, y: 0,
-    transition: { delay: i * 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] },
-  }),
+  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] } }),
 };
 
-// Conteúdo apenas do Excel
 const courseDatabase = {
-  1: { // ID do Excel
-    description: "Aprenda a organizar dados e criar cálculos automatizados do zero.",
+  1: { 
+    description: "Nesta primeira aula, vamos entender a estrutura principal da ferramenta e como organizar dados de forma inteligente para automações futuras. Você aprenderá a navegar pelas células, formatar planilhas e preparar o terreno para funções avançadas.",
+    videoUrl: "/aula-excel.mp4",
     modules: [
-      { title: "O que é uma Célula?", content: "A célula é a unidade básica do Excel. É o encontro de uma Coluna (Letra) com uma Linha (Número), como A1 ou B5." },
-      { title: "Operações Matemáticas", content: "Sempre comece com '='. Para somar valores, use a lógica simples: =10+20 ou referencie células: =A1+B1." },
-      { title: "Funções de Atalho", content: "A função =SOMA(A1:A10) permite somar um intervalo inteiro rapidamente sem fórmulas complexas." },
+      { title: "O que é uma Célula?", duration: "05:20" },
+      { title: "Operações Matemáticas", duration: "12:15" },
+      { title: "Funções de Atalho", duration: "08:45" },
     ]
   }
 };
 
 const initialCourses = [
-  { id: 1, title: "Excel Básico", progress: 100, xp: 300, status: "completed", tag: "Design" },
-  { id: 2, title: "Microsoft Word", progress: 0, xp: 250, status: "locked", tag: "Design", comingSoon: true },
+  { id: 1, title: "Excel Básico", progress: 0, xp: 300, status: "completed", tag: "Planilhas" },
+  { id: 2, title: "Microsoft Word", progress: 0, xp: 250, status: "locked", tag: "Documentos", comingSoon: true },
 ];
 
-export default function Quests() {
+export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
   const [activeCourse, setActiveCourse] = useState<any>(null);
+  
+  // 1. Estados para controlar as aulas completadas e a % total
+  const [excelProgress, setExcelProgress] = useState(0);
+  const [completedModules, setCompletedModules] = useState(0);
+
+  // Função para ler a gaveta e atualizar a tela
+  const loadProgress = () => {
+    const savedProg = Number(localStorage.getItem("rota40_excel_progress") || 0);
+    const savedMods = Number(localStorage.getItem("rota40_excel_modules") || 0);
+    setExcelProgress(savedProg);
+    setCompletedModules(savedMods);
+  };
+
+  useEffect(() => {
+    loadProgress(); // Carrega o progresso ao abrir a tela
+    
+    const shouldOpenExcel = localStorage.getItem("rota40_auto_open_excel");
+    if (shouldOpenExcel === "true") {
+      setActiveCourse(initialCourses[0]);
+      localStorage.removeItem("rota40_auto_open_excel");
+    }
+  }, []);
+
+  const handleCompleteLesson = () => {
+    // Dá o XP
+    const currentXp = Number(localStorage.getItem("rota40_xp") || 0);
+    localStorage.setItem("rota40_xp", (currentXp + 50).toString());
+    if (onXpGain) onXpGain();
+
+    // Lógica do Progresso (Tem 3 módulos no total)
+    if (completedModules < 3) {
+      const newMods = completedModules + 1;
+      localStorage.setItem("rota40_excel_modules", newMods.toString()); // Salva 1, 2 ou 3
+      
+      const newProg = Math.round((newMods / 3) * 100); // Transforma em 33%, 67% ou 100%
+      localStorage.setItem("rota40_excel_progress", newProg.toString());
+    }
+
+    loadProgress(); // Atualiza os números
+    setActiveCourse(null); // Volta pra lista
+  };
 
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-100 p-6 font-sans">
@@ -42,16 +80,8 @@ export default function Quests() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {initialCourses.map((c, i) => (
-                <motion.div key={c.id}
-                  className={`glass-card p-6 space-y-4 relative overflow-hidden transition-all duration-300 ${c.status === "locked" ? "grayscale opacity-50" : "hover:border-primary/50"}`}
-                  variants={fadeUp} initial="hidden" animate="visible" custom={i}>
-                  
-                  {c.comingSoon && (
-                    <div className="absolute top-3 right-3 bg-zinc-800 text-[10px] px-2 py-0.5 rounded text-zinc-400 font-bold border border-zinc-700">
-                      EM BREVE
-                    </div>
-                  )}
-
+                <motion.div key={c.id} className={`glass-card p-6 space-y-4 relative overflow-hidden transition-all duration-300 ${c.status === "locked" ? "grayscale opacity-50" : "hover:border-primary/50"}`} variants={fadeUp} initial="hidden" animate="visible" custom={i}>
+                  {c.comingSoon && <div className="absolute top-3 right-3 bg-zinc-800 text-[10px] px-2 py-0.5 rounded text-zinc-400 font-bold border border-zinc-700">EM BREVE</div>}
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="text-[10px] uppercase font-bold tracking-widest text-primary mb-1 block">{c.tag}</span>
@@ -59,24 +89,20 @@ export default function Quests() {
                     </div>
                     {c.status === "locked" ? <Lock className="w-5 h-5 text-zinc-500" /> : <Book className="w-5 h-5 text-primary" />}
                   </div>
-
+                  
                   <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
-                    <div className={`h-full rounded-full transition-all duration-1000 ${c.status === "completed" ? "bg-primary" : "xp-bar-fill"}`}
-                      style={{ width: `${c.progress}%` }} />
+                    {/* 2. A barra agora lê a porcentagem real! */}
+                    <div className={`h-full rounded-full transition-all duration-1000 ${c.id === 1 && excelProgress === 100 ? "bg-primary" : "xp-bar-fill"}`} style={{ width: `${c.id === 1 ? excelProgress : c.progress}%` }} />
                   </div>
-
+                  
                   <div className="flex justify-between items-center pt-2">
-                    <span className="text-xs font-mono neon-text-green">+{c.xp} XP</span>
+                    <span className="text-xs font-mono neon-text-green">+{c.xp} XP Máx</span>
                     {c.status !== "locked" ? (
-                      <button 
-                        onClick={() => setActiveCourse(c)}
-                        className="text-xs px-4 py-2 rounded bg-primary text-primary-foreground font-bold hover:scale-105 transition-transform flex items-center gap-1">
+                      <button onClick={() => setActiveCourse(c)} className="text-xs px-4 py-2 rounded bg-primary text-primary-foreground font-bold hover:scale-105 transition-transform flex items-center gap-1">
                         Acessar Conteúdo <ChevronRight className="w-3 h-3" />
                       </button>
                     ) : (
-                      <div className="flex items-center gap-1 text-zinc-600 text-[10px] font-bold uppercase">
-                        Bloqueado
-                      </div>
+                      <div className="flex items-center gap-1 text-zinc-600 text-[10px] font-bold uppercase">Bloqueado</div>
                     )}
                   </div>
                 </motion.div>
@@ -84,12 +110,11 @@ export default function Quests() {
             </div>
           </motion.div>
         ) : (
-          /* ABA DE IDENTIFICAÇÃO DO CURSO */
-          <motion.div key="content" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="max-w-3xl mx-auto">
+          <motion.div key="content" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="max-w-6xl mx-auto">
             <div className="flex items-center justify-between mb-8">
-              <button onClick={() => setActiveCourse(null)} className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group">
+              <button onClick={() => { setActiveCourse(null); loadProgress(); }} className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group">
                 <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> 
-                <span className="text-sm font-bold uppercase tracking-wider">Voltar</span>
+                <span className="text-sm font-bold uppercase tracking-wider">Voltar às Quests</span>
               </button>
               <div className="text-right">
                 <h2 className="text-2xl font-bold text-white">{activeCourse.title}</h2>
@@ -97,32 +122,54 @@ export default function Quests() {
               </div>
             </div>
 
-            <div className="glass-card p-8 border-t-2 border-primary/30 min-h-[400px]">
-              <div className="space-y-8">
-                <div className="flex gap-4 items-start bg-primary/5 p-4 rounded-lg border border-primary/10">
-                  <FileText className="text-primary shrink-0 w-6 h-6" />
-                  <p className="text-zinc-300 leading-relaxed italic">
-                    {courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.description}
-                  </p>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                <div className="w-full aspect-video bg-black rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_30px_rgba(168,85,247,0.15)] relative group">
+                  <video controls className="w-full h-full object-cover" src={courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.videoUrl}>Seu navegador não suporta vídeos.</video>
                 </div>
-
-                <div className="space-y-6">
-                  {courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.modules.map((mod, idx) => (
-                    <div key={idx} className="p-6 rounded-xl border border-white/5 bg-white/5">
-                      <h4 className="text-lg font-bold text-white mb-2 flex items-center gap-3">
-                        <span className="w-6 h-6 rounded bg-primary/20 text-primary text-xs flex items-center justify-center font-mono">0{idx + 1}</span>
-                        {mod.title}
-                      </h4>
-                      <p className="text-zinc-400 pl-9 leading-relaxed">
-                        {mod.content}
-                      </p>
-                    </div>
-                  ))}
+                <div className="glass-card p-6 md:p-8">
+                  <div className="flex items-center gap-3 mb-4 border-b border-white/10 pb-4">
+                    <FileText className="text-primary w-6 h-6" />
+                    <h3 className="text-xl font-bold">Material de Apoio</h3>
+                  </div>
+                  <p className="text-zinc-300 leading-relaxed text-sm md:text-base">{courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.description}</p>
                 </div>
+              </div>
 
-                <button onClick={() => setActiveCourse(null)} className="w-full py-4 bg-primary text-white font-black rounded-xl neon-glow-purple mt-6 hover:brightness-110 transition-all flex items-center justify-center gap-2 uppercase tracking-widest">
-                  Concluir Leitura <CheckCircle2 className="w-5 h-5" />
-                </button>
+              <div className="lg:col-span-1">
+                <div className="glass-card p-6 sticky top-28">
+                  <h3 className="font-bold text-lg mb-4 flex items-center justify-between">
+                    Conteúdo do Curso
+                    {/* 3. Mostra quantas aulas você já fez (Ex: 1/3) */}
+                    <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded font-mono">{completedModules}/3</span>
+                  </h3>
+                  <div className="space-y-3 mb-8">
+                    {courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.modules.map((mod, idx) => (
+                      <div key={idx} className={`p-4 rounded-xl border transition-colors cursor-pointer group flex items-start gap-3 ${idx < completedModules ? "border-primary/50 bg-primary/10" : "border-white/5 bg-white/5 hover:bg-white/10"}`}>
+                        {idx < completedModules ? (
+                           <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5 text-primary" />
+                        ) : (
+                           <PlayCircle className={`w-5 h-5 shrink-0 mt-0.5 ${idx === completedModules ? "text-primary" : "text-zinc-600 group-hover:text-zinc-400"}`} />
+                        )}
+                        <div>
+                          <h4 className={`text-sm font-bold ${idx <= completedModules ? "text-white" : "text-zinc-400 group-hover:text-white"} transition-colors`}>{idx + 1}. {mod.title}</h4>
+                          <p className="text-xs text-zinc-500 font-mono mt-1">{mod.duration}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* 4. Se já fez as 3 aulas, o botão avisa que concluiu! */}
+                  {completedModules < 3 ? (
+                    <button onClick={handleCompleteLesson} className="w-full py-3.5 bg-primary text-white font-bold rounded-xl neon-glow-purple hover:brightness-110 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-sm">
+                      <CheckCircle2 className="w-5 h-5" /> Concluir Etapa (+50 XP)
+                    </button>
+                  ) : (
+                    <button onClick={() => setActiveCourse(null)} className="w-full py-3.5 bg-green-500/20 text-green-400 border border-green-500/50 font-bold rounded-xl transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-sm">
+                      <CheckCircle2 className="w-5 h-5" /> Curso Concluído
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>

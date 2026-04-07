@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Flame, Lock, Unlock, Zap, Code, Play } from "lucide-react";
 
@@ -16,7 +17,7 @@ function CircularProgress({ percent }: { percent: number }) {
   return (
     <svg width="140" height="140" viewBox="0 0 120 120">
       <circle cx="60" cy="60" r={r} fill="none" strokeWidth="8" className="progress-ring-bg" />
-      <circle cx="60" cy="60" r={r} fill="none" strokeWidth="8" className="progress-ring-fill"
+      <circle cx="60" cy="60" r={r} fill="none" strokeWidth="8" className="progress-ring-fill transition-all duration-1000"
         strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset}
         transform="rotate(-90 60 60)"
       />
@@ -32,40 +33,56 @@ const achievements = [
   { name: "Team Player", icon: Unlock, unlocked: false },
 ];
 
-export default function Dashboard() {
+export default function Dashboard({ onContinue }: { onContinue?: () => void }) {
+  const [userName, setUserName] = useState("Estrategista");
+  // 1. Estado para guardar o progresso do curso
+  const [courseProgress, setCourseProgress] = useState(0);
+
+  useEffect(() => {
+    const savedName = localStorage.getItem("rota40_username");
+    // 2. Lê a porcentagem da gaveta
+    const savedProgress = localStorage.getItem("rota40_excel_progress");
+    
+    if (savedName) setUserName(savedName);
+    if (savedProgress) setCourseProgress(Number(savedProgress));
+  }, []);
+
   return (
     <div className="space-y-6">
       <motion.h1 className="text-3xl font-bold" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        Command Center
+        Bem-vindo(a), <span className="text-primary">{userName}</span>
       </motion.h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Active Mission */}
         <motion.div className="glass-card p-6 lg:col-span-2 flex flex-col sm:flex-row items-center gap-6 neon-glow-purple"
           variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={0}>
-          <CircularProgress percent={75} />
+          
+          {/* 3. Passa a porcentagem real pro gráfico */}
+          <CircularProgress percent={courseProgress} />
+          
           <div className="flex-1 space-y-3">
-            <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Active Mission</span>
-            <h2 className="text-xl font-bold">JavaScript Fundamentals</h2>
-            <p className="text-sm text-muted-foreground">Master closures, promises, and async patterns to unlock the next quest line.</p>
-            <button className="mt-2 px-5 py-2.5 rounded-lg bg-primary font-semibold text-sm text-primary-foreground hover:opacity-90 transition-opacity">
-              <Play className="inline w-4 h-4 mr-1 -mt-0.5" /> Resume Class
+            <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Missão Ativa</span>
+            <h2 className="text-xl font-bold">Excel Básico</h2>
+            <p className="text-sm text-muted-foreground">Aprenda a organizar dados, criar cálculos automatizados do zero e dominar as funções de atalho.</p>
+            <button 
+              onClick={onContinue}
+              className="mt-2 px-5 py-2.5 rounded-lg bg-primary font-semibold text-sm text-primary-foreground hover:opacity-90 transition-opacity flex items-center gap-2"
+            >
+              <Play className="w-4 h-4" /> Continuar Trilha
             </button>
           </div>
         </motion.div>
 
-        {/* Streak */}
         <motion.div className="glass-card p-6 flex flex-col items-center justify-center gap-3"
           variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={1}>
           <Flame className="w-12 h-12 text-neon-orange" />
-          <span className="text-4xl font-extrabold neon-text-orange">14</span>
-          <span className="text-sm text-muted-foreground">Day Streak 🔥</span>
+          <span className="text-4xl font-extrabold neon-text-orange">0</span>
+          <span className="text-sm text-muted-foreground">Dias de Ofensiva 🔥</span>
         </motion.div>
       </div>
 
-      {/* Achievements */}
       <motion.h2 className="text-xl font-bold pt-4" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={2}>
-        Achievements
+        Conquistas
       </motion.h2>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {achievements.map((a, i) => (
@@ -74,7 +91,7 @@ export default function Dashboard() {
             variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={i + 3}>
             {a.unlocked ? <a.icon className="w-8 h-8 text-neon-green" /> : <Lock className="w-8 h-8 text-muted-foreground" />}
             <span className="text-sm font-medium">{a.name}</span>
-            <span className="text-xs text-muted-foreground">{a.unlocked ? "Unlocked" : "Locked"}</span>
+            <span className="text-xs text-muted-foreground">{a.unlocked ? "Desbloqueado" : "Bloqueado"}</span>
           </motion.div>
         ))}
       </div>

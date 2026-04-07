@@ -10,14 +10,15 @@ const fadeUp = {
   }),
 };
 
+// 1. Episódios atualizados para o catálogo Rota 4.0
 const episodes = [
-  { id: 1, title: "Ep. 12: Hacking the Market", duration: "42 min", date: "Mar 1, 2026" },
-  { id: 2, title: "Ep. 11: AI for Beginners", duration: "38 min", date: "Feb 22, 2026" },
-  { id: 3, title: "Ep. 10: Remote Work Secrets", duration: "51 min", date: "Feb 15, 2026" },
-  { id: 4, title: "Ep. 9: Building a Brand", duration: "29 min", date: "Feb 8, 2026" },
-  { id: 5, title: "Ep. 8: Startup Mistakes", duration: "45 min", date: "Feb 1, 2026" },
-  { id: 6, title: "Ep. 7: The Crypto Landscape", duration: "33 min", date: "Jan 25, 2026" },
-  { id: 7, title: "Ep. 6: Design Thinking 101", duration: "40 min", date: "Jan 18, 2026" },
+  { id: 1, title: "Ep. 7: Lógica e Automação na Prática", duration: "42 min", date: "Mar 1, 2026" },
+  { id: 2, title: "Ep. 6: Dominando o Excel Básico", duration: "38 min", date: "Feb 22, 2026" },
+  { id: 3, title: "Ep. 5: O Futuro do Trabalho (Tech Trends)", duration: "51 min", date: "Feb 15, 2026" },
+  { id: 4, title: "Ep. 4: Python para Iniciantes", duration: "29 min", date: "Feb 8, 2026" },
+  { id: 5, title: "Ep. 3: Soft Skills na Programação", duration: "45 min", date: "Feb 1, 2026" },
+  { id: 6, title: "Ep. 2: Startups e Construção de MVP", duration: "33 min", date: "Jan 25, 2026" },
+  { id: 7, title: "Ep. 1: Criando Dashboards de Sucesso", duration: "40 min", date: "Jan 18, 2026" },
 ];
 
 function WaveformBars() {
@@ -48,21 +49,21 @@ export default function PodcastView() {
             <Headphones className="w-16 h-16 text-primary-foreground" />
           </div>
           <div className="space-y-3 text-center sm:text-left">
-            <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Now Featured</span>
+            <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Em Destaque</span>
             <h2 className="text-2xl font-bold">{currentEp.title}</h2>
-            <p className="text-sm text-muted-foreground">Insights, strategies, and unconventional thinking from industry leaders.</p>
+            <p className="text-sm text-muted-foreground">Insights, estratégias e visão de mercado com líderes da área Tech.</p>
             {playing && <WaveformBars />}
             <button onClick={() => setPlaying(!playing)}
               className="mt-2 px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity inline-flex items-center gap-2">
               {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-              {playing ? "Pause" : "Play Now"}
+              {playing ? "Pausar" : "Ouvir Agora"}
             </button>
           </div>
         </div>
       </motion.div>
 
       {/* Episode List */}
-      <h2 className="text-xl font-bold">All Episodes</h2>
+      <h2 className="text-xl font-bold">Todos os Episódios</h2>
       <div className="space-y-3">
         {episodes.map((ep, i) => (
           <motion.div key={ep.id}

@@ -33,9 +33,7 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
       >
         {/* Header do Login */}
         <div className="flex flex-col items-center mb-8 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-green-500 flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(168,85,247,0.4)]">
-            <Zap className="w-8 h-8 text-white" />
-          </div>
+          <img src="/rota-icon.png" alt="" className="w-32 h-32 object-contain mb-4 drop-shadow-[0_0_25px_rgba(168,85,247,0.6)]" />
           <h1 className="text-3xl font-bold mb-2">Rota 4.0</h1>
           <p className="text-gray-400 text-sm">O seu GPS para o futuro do trabalho.</p>
         </div>

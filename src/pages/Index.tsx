@@ -37,9 +37,8 @@ export default function Index({ onLogout }: IndexProps) {
         initial={{ x: -80 }} animate={{ x: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
         
         {/* Logo */}
-        <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-extrabold text-sm mb-10 neon-glow-purple">
-          R4
-        </div>
+        <img src="/rota-icon.png" alt=""className="w-16 h-16 object-contain mb-10 drop-shadow-[0_0_12px_rgba(168,85,247,0.6)] transition-transform duration-300 hover:scale-110 cursor-pointer" />
+        
 
         <nav className="flex flex-col items-center gap-4 flex-1">
           {navItems.map(item => (

@@ -13,7 +13,7 @@ const courseDatabase = {
     videos: [
       "/video_exel.mp4",      // Vídeo da Aula 1
       "/video_exel2.mp4",     // Vídeo da Aula 2 (adicione o arquivo na pasta public)
-      "/video_aula3.mp4",     // Vídeo da Aula 3
+      "/video_exel3.mp4",     // Vídeo da Aula 3
     ],
     modules: [
       { title: "O que é uma Célula?", duration: "05:20" },

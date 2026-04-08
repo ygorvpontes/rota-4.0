@@ -10,7 +10,7 @@ const fadeUp = {
 const courseDatabase = {
   1: { 
     description: "Nesta primeira aula, vamos entender a estrutura principal da ferramenta e como organizar dados de forma inteligente para automações futuras. Você aprenderá a navegar pelas células, formatar planilhas e preparar o terreno para funções avançadas.",
-    videoUrl: "/aula-excel.mp4",
+    videoUrl: "/video_exel.mp4",
     modules: [
       { title: "O que é uma Célula?", duration: "05:20" },
       { title: "Operações Matemáticas", duration: "12:15" },

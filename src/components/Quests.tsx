@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Lock, ChevronRight, ArrowLeft, Book, CheckCircle2, FileText, PlayCircle, Copyright } from "lucide-react";
+import { supabase } from '@/lib/supabaseClient';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -11,9 +12,9 @@ const courseDatabase = {
   1: { 
     description: "Nesta primeira aula, vamos entender a estrutura principal da ferramenta e como organizar dados de forma inteligente para automações futuras. Você aprenderá a navegar pelas células, formatar planilhas e preparar o terreno para funções avançadas.",
     videos: [
-      "/video_exel.mp4",      // Vídeo da Aula 1
-      "/video_exel2.mp4",     // Vídeo da Aula 2 (adicione o arquivo na pasta public)
-      "/video_exel3.mp4",     // Vídeo da Aula 3
+      "/video_exel.mp4",
+      "/video_exel2.mp4",
+      "/video_exel3.mp4",
     ],
     modules: [
       { title: "O que é uma Célula?", duration: "05:20" },
@@ -35,11 +36,21 @@ export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
   const [excelProgress, setExcelProgress] = useState(0);
   const [completedModules, setCompletedModules] = useState(0);
 
-  const loadProgress = () => {
-    const savedProg = Number(localStorage.getItem("rota40_excel_progress") || 0);
-    const savedMods = Number(localStorage.getItem("rota40_excel_modules") || 0);
-    setExcelProgress(savedProg);
-    setCompletedModules(savedMods);
+  // ☁️ BUSCA DA NUVEM: Lê as aulas completadas direto do Supabase
+  const loadProgress = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('excel_progress, excel_modules')
+        .eq('id', user.id)
+        .single();
+
+      if (data) {
+        setExcelProgress(data.excel_progress || 0);
+        setCompletedModules(data.excel_modules || 0);
+      }
+    }
   };
 
   useEffect(() => {
@@ -52,20 +63,56 @@ export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
     }
   }, []);
 
-  const handleCompleteLesson = () => {
-    const currentXp = Number(localStorage.getItem("rota40_xp") || 0);
-    localStorage.setItem("rota40_xp", (currentXp + 50).toString());
-    if (onXpGain) onXpGain();
+  // 🚀 ATUALIZA NA NUVEM: Grava o progresso e o XP no banco
+  const handleCompleteLesson = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
 
-    if (completedModules < 3) {
-      const newMods = completedModules + 1;
-      localStorage.setItem("rota40_excel_modules", newMods.toString());
-      
-      const newProg = Math.round((newMods / 3) * 100);
-      localStorage.setItem("rota40_excel_progress", newProg.toString());
+      if (user) {
+        // Puxa tudo de uma vez
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('xp, level, excel_progress, excel_modules')
+          .eq('id', user.id)
+          .single();
+
+        if (profile) {
+          const novoXp = (profile.xp || 0) + 50;
+          let novoLevel = profile.level || 1;
+          let newMods = profile.excel_modules || 0;
+          let newProg = profile.excel_progress || 0;
+
+          if (novoXp >= novoLevel * 500) {
+            novoLevel += 1;
+          }
+
+          if (newMods < 3) {
+            newMods += 1;
+            newProg = Math.round((newMods / 3) * 100);
+          }
+
+          // Grava XP, Nível e Progresso de uma vez só!
+          await supabase
+            .from('profiles')
+            .update({ 
+              xp: novoXp, 
+              level: novoLevel,
+              excel_modules: newMods,
+              excel_progress: newProg
+            })
+            .eq('id', user.id);
+
+          // Atualiza a tela imediatamente
+          setCompletedModules(newMods);
+          setExcelProgress(newProg);
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao salvar progresso:", error);
     }
 
-    loadProgress();
+    if (onXpGain) onXpGain();
+
     setActiveCourse(null);
     setCurrentVideoIndex(0); 
   };
@@ -143,7 +190,6 @@ export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
                   </div>
                   <p className="text-zinc-300 leading-relaxed text-sm md:text-base">{courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.description}</p>
                   
-                  {/* ADIÇÃO: CRÉDITOS E DIREITOS AUTORAIS */}
                   <div className="mt-8 pt-6 border-t border-white/5 flex items-start gap-2 opacity-50">
                     <Copyright className="w-3 h-3 text-zinc-500 mt-1 shrink-0" />
                     <p className="text-[10px] text-zinc-500 italic leading-relaxed">

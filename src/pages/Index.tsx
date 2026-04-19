@@ -1,32 +1,54 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Home, Target, Headphones, Trophy, User, LogOut, UserPlus, X, Send } from "lucide-react";
-import Dashboard from "@/components/Dashboard"; // Ajuste se necessário
+import Dashboard from "@/components/Dashboard"; 
 import Quests from "@/components/Quests";
 import PodcastView from "@/components/PodcastView";
 import Rankings from "@/components/Rankings";
+import Profile from "@/components/Profile"; // 👈 1. Importamos o Perfil!
+import { supabase } from '@/lib/supabaseClient';
 
+// 👈 2. Adicionamos o Perfil no menu lateral
 const navItems = [
   { id: "home", icon: Home, label: "Home" },
   { id: "quests", icon: Target, label: "Quests" },
   { id: "podcast", icon: Headphones, label: "Podcast" },
   { id: "rankings", icon: Trophy, label: "Rankings" },
+  { id: "profile", icon: User, label: "Perfil" }, 
 ];
 
 export default function Index({ onLogout }: { onLogout?: () => void }) {
   const [active, setActive] = useState("home");
-  const [userName, setUserName] = useState("Estrategista");
+  const [userName, setUserName] = useState("Carregando...");
   const [xp, setXp] = useState(0);
+  const [level, setLevel] = useState(1); 
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null); // 👈 3. Estado pra foto no Header!
   const xpMax = 500;
-  
-  // Estado para o Popup de Amigo
+
   const [isAddFriendOpen, setIsAddFriendOpen] = useState(false);
 
-  const refreshStats = () => {
-    const savedName = localStorage.getItem("rota40_username");
-    const savedXp = localStorage.getItem("rota40_xp");
-    if (savedName) setUserName(savedName);
-    if (savedXp) setXp(Number(savedXp));
+  const refreshStats = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // 👈 Puxando a foto (avatar_url) junto com o resto
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username, xp, level, avatar_url')
+          .eq('id', user.id)
+          .single();
+
+        if (profile) {
+          setUserName(profile.username);
+          setXp(profile.xp || 0);
+          setLevel(profile.level || 1);
+          setAvatarUrl(profile.avatar_url);
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao buscar dados do perfil:", error);
+    }
   };
 
   useEffect(() => {
@@ -36,6 +58,12 @@ export default function Index({ onLogout }: { onLogout?: () => void }) {
   const handleContinueCourse = () => {
     localStorage.setItem("rota40_auto_open_excel", "true");
     setActive("quests");
+  };
+
+  const handleSair = async () => {
+    await supabase.auth.signOut();
+    localStorage.clear(); 
+    if (onLogout) onLogout(); 
   };
 
   return (
@@ -55,7 +83,7 @@ export default function Index({ onLogout }: { onLogout?: () => void }) {
           ))}
         </nav>
         {onLogout && (
-          <button onClick={onLogout} className="w-12 h-12 mt-auto mb-4 rounded-xl flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-500/10 hover:border hover:border-red-500/20 transition-all" title="Sair da Plataforma">
+          <button onClick={handleSair} className="w-12 h-12 mt-auto mb-4 rounded-xl flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-500/10 hover:border hover:border-red-500/20 transition-all" title="Sair da Plataforma">
             <LogOut className="w-5 h-5 ml-1" />
           </button>
         )}
@@ -68,12 +96,23 @@ export default function Index({ onLogout }: { onLogout?: () => void }) {
           initial={{ y: -60 }} animate={{ y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
           
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center shadow-[0_0_10px_rgba(168,85,247,0.2)]">
-              <User className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm font-bold leading-tight">{userName}</p>
-              <p className="text-xs text-primary font-medium tracking-wide">Nível 1 Iniciante</p>
+            {/* 👈 4. Deixamos o seu nome e foto clicáveis pra abrir o Perfil */}
+            <div 
+              onClick={() => setActive("profile")}
+              className="flex items-center gap-3 cursor-pointer group hover:bg-white/5 p-2 -ml-2 rounded-xl transition-colors"
+              title="Acessar Perfil"
+            >
+              <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center shadow-[0_0_10px_rgba(168,85,247,0.2)] overflow-hidden">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
+                )}
+              </div>
+              <div>
+                <p className="text-sm font-bold leading-tight group-hover:text-primary transition-colors">{userName}</p>
+                <p className="text-xs text-primary font-medium tracking-wide">Nível {level} Iniciante</p>
+              </div>
             </div>
             
             {/* BOTÃO ADICIONAR AMIGO */}
@@ -84,6 +123,7 @@ export default function Index({ onLogout }: { onLogout?: () => void }) {
             >
               <UserPlus className="w-4 h-4 group-hover:scale-110 transition-transform" />
             </button>
+
           </div>
 
           <div className="flex items-center gap-3 flex-1 max-w-sm">
@@ -103,7 +143,7 @@ export default function Index({ onLogout }: { onLogout?: () => void }) {
           </div>
         </motion.header>
 
-        {/* POPUP DE ADICIONAR AMIGO */}
+        {/* POPUP DE ADICIONAR AMIGO ... mantido */}
         <AnimatePresence>
           {isAddFriendOpen && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -164,6 +204,8 @@ export default function Index({ onLogout }: { onLogout?: () => void }) {
               {active === "quests" && <Quests onXpGain={refreshStats} />}
               {active === "podcast" && <PodcastView />}
               {active === "rankings" && <Rankings />}
+              {/* 👈 5. Renderizando o Perfil aqui na área principal */}
+              {active === "profile" && <Profile onLogout={handleSair} />}
             </motion.div>
           </AnimatePresence>
         </main>

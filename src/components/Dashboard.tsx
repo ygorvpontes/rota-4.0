@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Flame, Lock, Unlock, Zap, Code, Play } from "lucide-react";
+import { supabase } from '@/lib/supabaseClient'; // 👈 Importando nosso banco!
 
 const fadeUp = {
   hidden: { opacity: 0, y: 40 },
@@ -34,17 +35,34 @@ const achievements = [
 ];
 
 export default function Dashboard({ onContinue }: { onContinue?: () => void }) {
-  const [userName, setUserName] = useState("Estrategista");
-  // 1. Estado para guardar o progresso do curso
+  const [userName, setUserName] = useState("Carregando...");
   const [courseProgress, setCourseProgress] = useState(0);
 
+  // 🚀 BUSCANDO DADOS NA NUVEM
+  const loadDashboardData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Puxa o nome e o progresso do Excel do banco de dados
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username, excel_progress')
+          .eq('id', user.id)
+          .single();
+
+        if (profile) {
+          setUserName(profile.username || "Estrategista");
+          setCourseProgress(profile.excel_progress || 0); // 👈 Atualiza a barra redonda!
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao carregar Dashboard:", error);
+    }
+  };
+
   useEffect(() => {
-    const savedName = localStorage.getItem("rota40_username");
-    // 2. Lê a porcentagem da gaveta
-    const savedProgress = localStorage.getItem("rota40_excel_progress");
-    
-    if (savedName) setUserName(savedName);
-    if (savedProgress) setCourseProgress(Number(savedProgress));
+    loadDashboardData();
   }, []);
 
   return (
@@ -57,7 +75,6 @@ export default function Dashboard({ onContinue }: { onContinue?: () => void }) {
         <motion.div className="glass-card p-6 lg:col-span-2 flex flex-col sm:flex-row items-center gap-6 neon-glow-purple"
           variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={0}>
           
-          {/* 3. Passa a porcentagem real pro gráfico */}
           <CircularProgress percent={courseProgress} />
           
           <div className="flex-1 space-y-3">

@@ -5,10 +5,10 @@ import Dashboard from "@/components/Dashboard";
 import Quests from "@/components/Quests";
 import PodcastView from "@/components/PodcastView";
 import Rankings from "@/components/Rankings";
-import Profile from "@/components/Profile"; // 👈 1. Importamos o Perfil!
+import Profile from "@/components/Profile";
 import { supabase } from '@/lib/supabaseClient';
+import Avatar, { genConfig } from 'react-nice-avatar'; 
 
-// 👈 2. Adicionamos o Perfil no menu lateral
 const navItems = [
   { id: "home", icon: Home, label: "Home" },
   { id: "quests", icon: Target, label: "Quests" },
@@ -22,7 +22,7 @@ export default function Index({ onLogout }: { onLogout?: () => void }) {
   const [userName, setUserName] = useState("Carregando...");
   const [xp, setXp] = useState(0);
   const [level, setLevel] = useState(1); 
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null); // 👈 3. Estado pra foto no Header!
+  const [avatarConfig, setAvatarConfig] = useState<any>(null); 
   const xpMax = 500;
 
   const [isAddFriendOpen, setIsAddFriendOpen] = useState(false);
@@ -32,22 +32,57 @@ export default function Index({ onLogout }: { onLogout?: () => void }) {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
-        // 👈 Puxando a foto (avatar_url) junto com o resto
-        const { data: profile } = await supabase
+        // Pedimos todas as colunas que criamos no Supabase
+        const { data: profile, error } = await supabase
           .from('profiles')
-          .select('username, xp, level, avatar_url')
+          .select('username, xp, level, avatar_config, streak, last_active')
           .eq('id', user.id)
           .single();
 
+        if (error) {
+          console.error("ERRO NO SUPABASE:", error.message);
+          setUserName("Conta não encontrada"); 
+          return;
+        }
+
         if (profile) {
-          setUserName(profile.username);
+          setUserName(profile.username || "Estrategista");
           setXp(profile.xp || 0);
           setLevel(profile.level || 1);
-          setAvatarUrl(profile.avatar_url);
+          
+          if (profile.avatar_config && Object.keys(profile.avatar_config).length > 0) {
+            setAvatarConfig(genConfig(profile.avatar_config));
+          }
+
+          // 🔥 LÓGICA DE OFENSIVAS 🔥
+          const today = new Date().toLocaleDateString('en-CA'); 
+          let currentStreak = profile.streak || 0;
+          let lastActive = profile.last_active;
+
+          if (lastActive !== today) {
+            if (lastActive) {
+              const d1 = new Date(lastActive + 'T00:00:00');
+              const d2 = new Date(today + 'T00:00:00');
+              const diffDays = Math.floor((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
+
+              if (diffDays === 1) {
+                currentStreak += 1; 
+              } else if (diffDays > 1) {
+                currentStreak = 1; 
+              }
+            } else {
+              currentStreak = 1; 
+            }
+
+            await supabase
+              .from('profiles')
+              .update({ streak: currentStreak, last_active: today })
+              .eq('id', user.id);
+          }
         }
       }
     } catch (error) {
-      console.error("Erro ao buscar dados do perfil:", error);
+      console.error("Erro crítico ao buscar dados:", error);
     }
   };
 
@@ -96,15 +131,14 @@ export default function Index({ onLogout }: { onLogout?: () => void }) {
           initial={{ y: -60 }} animate={{ y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
           
           <div className="flex items-center gap-3">
-            {/* 👈 4. Deixamos o seu nome e foto clicáveis pra abrir o Perfil */}
             <div 
               onClick={() => setActive("profile")}
               className="flex items-center gap-3 cursor-pointer group hover:bg-white/5 p-2 -ml-2 rounded-xl transition-colors"
               title="Acessar Perfil"
             >
               <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center shadow-[0_0_10px_rgba(168,85,247,0.2)] overflow-hidden">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                {avatarConfig ? (
+                  <Avatar className="w-full h-full scale-110" {...avatarConfig} />
                 ) : (
                   <User className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
                 )}
@@ -115,7 +149,6 @@ export default function Index({ onLogout }: { onLogout?: () => void }) {
               </div>
             </div>
             
-            {/* BOTÃO ADICIONAR AMIGO */}
             <button 
               onClick={() => setIsAddFriendOpen(true)}
               className="ml-2 w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-primary hover:border-primary/50 hover:bg-primary/10 transition-all group"
@@ -123,7 +156,6 @@ export default function Index({ onLogout }: { onLogout?: () => void }) {
             >
               <UserPlus className="w-4 h-4 group-hover:scale-110 transition-transform" />
             </button>
-
           </div>
 
           <div className="flex items-center gap-3 flex-1 max-w-sm">
@@ -143,7 +175,6 @@ export default function Index({ onLogout }: { onLogout?: () => void }) {
           </div>
         </motion.header>
 
-        {/* POPUP DE ADICIONAR AMIGO ... mantido */}
         <AnimatePresence>
           {isAddFriendOpen && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -204,7 +235,6 @@ export default function Index({ onLogout }: { onLogout?: () => void }) {
               {active === "quests" && <Quests onXpGain={refreshStats} />}
               {active === "podcast" && <PodcastView />}
               {active === "rankings" && <Rankings />}
-              {/* 👈 5. Renderizando o Perfil aqui na área principal */}
               {active === "profile" && <Profile onLogout={handleSair} />}
             </motion.div>
           </AnimatePresence>

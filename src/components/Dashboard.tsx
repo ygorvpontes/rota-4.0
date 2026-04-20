@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Flame, Lock, Unlock, Zap, Code, Play } from "lucide-react";
-import { supabase } from '@/lib/supabaseClient'; // 👈 Importando nosso banco!
+import { supabase } from '@/lib/supabaseClient'; 
 
 const fadeUp = {
   hidden: { opacity: 0, y: 40 },
@@ -37,23 +37,24 @@ const achievements = [
 export default function Dashboard({ onContinue }: { onContinue?: () => void }) {
   const [userName, setUserName] = useState("Carregando...");
   const [courseProgress, setCourseProgress] = useState(0);
+  const [streak, setStreak] = useState(0); 
 
-  // 🚀 BUSCANDO DADOS NA NUVEM
   const loadDashboardData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
-        // Puxa o nome e o progresso do Excel do banco de dados
+        // Buscamos o progresso do Excel e a Ofensiva (streak) direto do Perfil
         const { data: profile } = await supabase
           .from('profiles')
-          .select('username, excel_progress')
+          .select('username, excel_progress, streak')
           .eq('id', user.id)
           .single();
 
         if (profile) {
           setUserName(profile.username || "Estrategista");
-          setCourseProgress(profile.excel_progress || 0); // 👈 Atualiza a barra redonda!
+          setCourseProgress(profile.excel_progress || 0); 
+          setStreak(profile.streak || 0); 
         }
       }
     } catch (error) {
@@ -90,11 +91,14 @@ export default function Dashboard({ onContinue }: { onContinue?: () => void }) {
           </div>
         </motion.div>
 
+        {/* 🚀 O Foguinho de Ofensiva! */}
         <motion.div className="glass-card p-6 flex flex-col items-center justify-center gap-3"
           variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={1}>
-          <Flame className="w-12 h-12 text-neon-orange" />
-          <span className="text-4xl font-extrabold neon-text-orange">0</span>
-          <span className="text-sm text-muted-foreground">Dias de Ofensiva 🔥</span>
+          <Flame className={`w-12 h-12 ${streak > 0 ? "text-neon-orange drop-shadow-[0_0_15px_rgba(251,146,60,0.5)]" : "text-zinc-600"}`} />
+          <span className={`text-5xl font-extrabold ${streak > 0 ? "neon-text-orange" : "text-zinc-500"}`}>
+            {streak}
+          </span>
+          <span className="text-sm text-muted-foreground font-medium uppercase tracking-widest text-center">Dias de Ofensiva 🔥</span>
         </motion.div>
       </div>
 

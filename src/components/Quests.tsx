@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Lock, ChevronRight, ArrowLeft, Book, CheckCircle2, FileText, PlayCircle, Copyright } from "lucide-react";
 import { supabase } from '@/lib/supabaseClient';
+import { CommentSection } from "./CommentSection"
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -197,6 +198,10 @@ export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
                     </p>
                   </div>
                 </div>
+
+                {/* 🚀 FÓRUM ENTRA AQUI! DEBAIXO DO MATERIAL DE APOIO 🚀 */}
+                <CommentSection questId="excel-basico" />
+
               </div>
 
               <div className="lg:col-span-1">

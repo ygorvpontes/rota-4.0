@@ -28,7 +28,7 @@ const courseDatabase = {
     description: "Aprenda a administrar seu dinheiro com inteligência. A educação financeira está relacionada ao desenvolvimento de hábitos que auxiliam na administração do dinheiro. O objetivo é promover maior organization, planejamento e consciência nas decisões financeiras. Entenda para onde vai seu dinheiro, evitando compras por impulso, e utilize recursos que auxiliam no controle financeiro diário.",
     videos: [
       "/financeiro.mp4", // Módulo 1: Vídeo Local
-      "/financeiroimg1.png", // Módulo 2: Imagem
+      "/financeiroimg1.jpeg", // Módulo 2: Imagem
       "https://www.youtube.com/embed/CB5zuxQl5ro", // Módulo 3: Vídeo do YouTube
       "/conclusao.png" // Módulo 4: Imagem de Finalização
     ],
@@ -40,7 +40,7 @@ const courseDatabase = {
     ],
     link: "https://www.canva.com/design/DAHJ-sJGZYw/ukKKOXcnbhB0Tpo0OkB5-A/view" 
   }
-};
+}; 
 
 const initialCourses = [
   { id: 1, title: "Excel Básico", progress: 0, xp: 300, status: "completed", tag: "Planilhas" },

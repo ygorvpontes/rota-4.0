@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, ChevronRight, ArrowLeft, Book, CheckCircle2, FileText, PlayCircle, Copyright } from "lucide-react";
+import { Lock, ChevronRight, ArrowLeft, Book, CheckCircle2, FileText, PlayCircle, Copyright, ExternalLink, ImageIcon, Trophy } from "lucide-react";
 import { supabase } from '@/lib/supabaseClient';
 import { CommentSection } from "./CommentSection"
 
@@ -21,91 +21,110 @@ const courseDatabase = {
       { title: "O que é uma Célula?", duration: "05:20" },
       { title: "Operações Matemáticas", duration: "12:15" },
       { title: "Funções de Atalho", duration: "08:45" },
-    ]
+    ],
+    link: null
+  },
+  2: { 
+    description: "Aprenda a administrar seu dinheiro com inteligência. A educação financeira está relacionada ao desenvolvimento de hábitos que auxiliam na administração do dinheiro. O objetivo é promover maior organization, planejamento e consciência nas decisões financeiras. Entenda para onde vai seu dinheiro, evitando compras por impulso, e utilize recursos que auxiliam no controle financeiro diário.",
+    videos: [
+      "/financeiro.mp4", // Módulo 1: Vídeo Local
+      "/financeiroimg1.png", // Módulo 2: Imagem
+      "https://www.youtube.com/embed/CB5zuxQl5ro", // Módulo 3: Vídeo do YouTube
+      "/conclusao.png" // Módulo 4: Imagem de Finalização
+    ],
+    modules: [
+      { title: "Introdução à Educação Financeira", duration: "09:28" },
+      { title: "A Riqueza na Prática (Quadrinhos)", duration: "Leitura" },
+      { title: "Estratégias Avançadas (Vídeo)", duration: "07:15" },
+      { title: "Missão Cumprida!", duration: "Recompensa" },
+    ],
+    link: "https://www.canva.com/design/DAHJ-sJGZYw/ukKKOXcnbhB0Tpo0OkB5-A/view" 
   }
 };
 
 const initialCourses = [
   { id: 1, title: "Excel Básico", progress: 0, xp: 300, status: "completed", tag: "Planilhas" },
-  { id: 2, title: "Microsoft Word", progress: 0, xp: 250, status: "locked", tag: "Documentos", comingSoon: true },
+  { id: 2, title: "Educação Financeira", progress: 0, xp: 400, status: "available", tag: "Finanças" },
+  { id: 3, title: "Microsoft Word", progress: 0, xp: 250, status: "locked", tag: "Documentos", comingSoon: true },
 ];
 
 export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
   const [activeCourse, setActiveCourse] = useState<any>(null);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   
+  // Estados de progresso
   const [excelProgress, setExcelProgress] = useState(0);
-  const [completedModules, setCompletedModules] = useState(0);
+  const [excelModules, setExcelModules] = useState(0);
+  const [financeProgress, setFinanceProgress] = useState(0);
+  const [financeModules, setFinanceModules] = useState(0);
 
-  // ☁️ BUSCA DA NUVEM: Lê as aulas completadas direto do Supabase
   const loadProgress = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { data } = await supabase
         .from('profiles')
-        .select('excel_progress, excel_modules')
+        .select('excel_progress, excel_modules, finance_progress, finance_modules')
         .eq('id', user.id)
         .single();
 
       if (data) {
         setExcelProgress(data.excel_progress || 0);
-        setCompletedModules(data.excel_modules || 0);
+        setExcelModules(data.excel_modules || 0);
+        setFinanceProgress(data.finance_progress || 0);
+        setFinanceModules(data.finance_modules || 0);
       }
     }
   };
 
   useEffect(() => {
     loadProgress();
-    
-    const shouldOpenExcel = localStorage.getItem("rota40_auto_open_excel");
-    if (shouldOpenExcel === "true") {
-      setActiveCourse(initialCourses[0]);
-      localStorage.removeItem("rota40_auto_open_excel");
-    }
   }, []);
 
-  // 🚀 ATUALIZA NA NUVEM: Grava o progresso e o XP no banco
+  const getActiveProgress = () => activeCourse?.id === 1 ? excelProgress : financeProgress;
+  const getActiveModules = () => activeCourse?.id === 1 ? excelModules : financeModules;
+
   const handleCompleteLesson = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
-      if (user) {
-        // Puxa tudo de uma vez
+      if (user && activeCourse) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('xp, level, excel_progress, excel_modules')
+          .select('*')
           .eq('id', user.id)
           .single();
 
         if (profile) {
           const novoXp = (profile.xp || 0) + 50;
           let novoLevel = profile.level || 1;
-          let newMods = profile.excel_modules || 0;
-          let newProg = profile.excel_progress || 0;
-
+          
           if (novoXp >= novoLevel * 500) {
             novoLevel += 1;
           }
 
-          if (newMods < 3) {
-            newMods += 1;
-            newProg = Math.round((newMods / 3) * 100);
+          let updateData: any = { xp: novoXp, level: novoLevel };
+          
+          const totalMods = courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.modules.length || 1;
+
+          if (activeCourse.id === 1) {
+            let newMods = (profile.excel_modules || 0) + 1;
+            if (newMods <= totalMods) {
+              updateData.excel_modules = newMods;
+              updateData.excel_progress = Math.round((newMods / totalMods) * 100);
+              setExcelModules(updateData.excel_modules);
+              setExcelProgress(updateData.excel_progress);
+            }
+          } else if (activeCourse.id === 2) {
+            let newMods = (profile.finance_modules || 0) + 1;
+            if (newMods <= totalMods) {
+              updateData.finance_modules = newMods;
+              updateData.finance_progress = Math.round((newMods / totalMods) * 100);
+              setFinanceModules(updateData.finance_modules);
+              setFinanceProgress(updateData.finance_progress);
+            }
           }
 
-          // Grava XP, Nível e Progresso de uma vez só!
-          await supabase
-            .from('profiles')
-            .update({ 
-              xp: novoXp, 
-              level: novoLevel,
-              excel_modules: newMods,
-              excel_progress: newProg
-            })
-            .eq('id', user.id);
-
-          // Atualiza a tela imediatamente
-          setCompletedModules(newMods);
-          setExcelProgress(newProg);
+          await supabase.from('profiles').update(updateData).eq('id', user.id);
         }
       }
     } catch (error) {
@@ -118,6 +137,13 @@ export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
     setCurrentVideoIndex(0); 
   };
 
+  const currentMedia = activeCourse ? courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.videos[currentVideoIndex] : null;
+  const isImage = currentMedia?.includes("img") || currentMedia?.includes("conclusao") || currentMedia?.match(/\.(jpeg|jpg|gif|png)$/i);
+  const isCanva = currentMedia?.includes("canva.com");
+  const isYouTube = currentMedia?.includes("youtube.com");
+  
+  const totalCourseModules = activeCourse ? courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.modules.length : 0;
+
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-100 p-6 font-sans">
       <AnimatePresence mode="wait">
@@ -129,33 +155,36 @@ export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
             </header>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {initialCourses.map((c, i) => (
-                <motion.div key={c.id} className={`glass-card p-6 space-y-4 relative overflow-hidden transition-all duration-300 ${c.status === "locked" ? "grayscale opacity-50" : "hover:border-primary/50"}`} variants={fadeUp} initial="hidden" animate="visible" custom={i}>
-                  {c.comingSoon && <div className="absolute top-3 right-3 bg-zinc-800 text-[10px] px-2 py-0.5 rounded text-zinc-400 font-bold border border-zinc-700">EM BREVE</div>}
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className="text-[10px] uppercase font-bold tracking-widest text-primary mb-1 block">{c.tag}</span>
-                      <h3 className="font-bold text-xl">{c.title}</h3>
+              {initialCourses.map((c, i) => {
+                const prog = c.id === 1 ? excelProgress : (c.id === 2 ? financeProgress : c.progress);
+                return (
+                  <motion.div key={c.id} className={`glass-card p-6 space-y-4 relative overflow-hidden transition-all duration-300 ${c.status === "locked" ? "grayscale opacity-50" : "hover:border-primary/50"}`} variants={fadeUp} initial="hidden" animate="visible" custom={i}>
+                    {c.comingSoon && <div className="absolute top-3 right-3 bg-zinc-800 text-[10px] px-2 py-0.5 rounded text-zinc-400 font-bold border border-zinc-700">EM BREVE</div>}
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold tracking-widest text-primary mb-1 block">{c.tag}</span>
+                        <h3 className="font-bold text-xl">{c.title}</h3>
+                      </div>
+                      {c.status === "locked" ? <Lock className="w-5 h-5 text-zinc-500" /> : <Book className="w-5 h-5 text-primary" />}
                     </div>
-                    {c.status === "locked" ? <Lock className="w-5 h-5 text-zinc-500" /> : <Book className="w-5 h-5 text-primary" />}
-                  </div>
-                  
-                  <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
-                    <div className={`h-full rounded-full transition-all duration-1000 ${c.id === 1 && excelProgress === 100 ? "bg-primary" : "xp-bar-fill"}`} style={{ width: `${c.id === 1 ? excelProgress : c.progress}%` }} />
-                  </div>
-                  
-                  <div className="flex justify-between items-center pt-2">
-                    <span className="text-xs font-mono neon-text-green">+{c.xp} XP Máx</span>
-                    {c.status !== "locked" ? (
-                      <button onClick={() => setActiveCourse(c)} className="text-xs px-4 py-2 rounded bg-primary text-primary-foreground font-bold hover:scale-105 transition-transform flex items-center gap-1">
-                        Acessar Conteúdo <ChevronRight className="w-3 h-3" />
-                      </button>
-                    ) : (
-                      <div className="flex items-center gap-1 text-zinc-600 text-[10px] font-bold uppercase">Bloqueado</div>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
+                    
+                    <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                      <div className={`h-full rounded-full transition-all duration-1000 ${prog === 100 ? "bg-primary" : "xp-bar-fill"}`} style={{ width: `${prog}%` }} />
+                    </div>
+                    
+                    <div className="flex justify-between items-center pt-2">
+                      <span className="text-xs font-mono neon-text-green">+{c.xp} XP Máx</span>
+                      {c.status !== "locked" ? (
+                        <button onClick={() => setActiveCourse(c)} className="text-xs px-4 py-2 rounded bg-primary text-primary-foreground font-bold hover:scale-105 transition-transform flex items-center gap-1">
+                          Acessar Conteúdo <ChevronRight className="w-3 h-3" />
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-1 text-zinc-600 text-[10px] font-bold uppercase">Bloqueado</div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           </motion.div>
         ) : (
@@ -173,34 +202,75 @@ export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 space-y-6">
-                <div className="w-full aspect-video bg-black rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_30px_rgba(168,85,247,0.15)] relative group">
-                  <video 
-                    key={currentVideoIndex}
-                    controls 
-                    autoPlay
-                    className="w-full h-full object-cover" 
-                    src={courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.videos[currentVideoIndex]}
-                  >
-                    Seu navegador não suporta vídeos.
-                  </video>
+                
+                <div className="w-full aspect-video bg-black rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_30px_rgba(168,85,247,0.15)] relative group flex items-center justify-center">
+                  
+                  {isYouTube ? (
+                    <iframe
+                      className="w-full h-full object-cover"
+                      src={currentMedia}
+                      title="YouTube video player"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    ></iframe>
+                  ) : isCanva ? (
+                    <iframe
+                      loading="lazy"
+                      className="w-full h-full absolute top-0 left-0 border-none"
+                      src={currentMedia}
+                      allowFullScreen
+                      allow="fullscreen"
+                    ></iframe>
+                  ) : isImage ? (
+                    <img 
+                      src={currentMedia} 
+                      alt="Material da Aula" 
+                      className="w-full h-full object-contain bg-[#12121a]" 
+                    />
+                  ) : (
+                    <video 
+                      key={currentVideoIndex}
+                      controls 
+                      autoPlay
+                      className="w-full h-full object-cover" 
+                      src={currentMedia}
+                    >
+                      Seu navegador não suporta vídeos.
+                    </video>
+                  )}
                 </div>
+                
                 <div className="glass-card p-6 md:p-8">
                   <div className="flex items-center gap-3 mb-4 border-b border-white/10 pb-4">
                     <FileText className="text-primary w-6 h-6" />
                     <h3 className="text-xl font-bold">Material de Apoio</h3>
                   </div>
-                  <p className="text-zinc-300 leading-relaxed text-sm md:text-base">{courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.description}</p>
+                  <p className="text-zinc-300 leading-relaxed text-sm md:text-base">
+                    {courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.description}
+                  </p>
+
+                  {courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.link && (
+                    <a 
+                      href={courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.link || '#'} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="mt-6 inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold px-6 py-3 rounded-xl hover:scale-105 transition-transform"
+                    >
+                      <ExternalLink className="w-5 h-5" />
+                      Abrir Material Externo
+                    </a>
+                  )}
                   
                   <div className="mt-8 pt-6 border-t border-white/5 flex items-start gap-2 opacity-50">
                     <Copyright className="w-3 h-3 text-zinc-500 mt-1 shrink-0" />
                     <p className="text-[10px] text-zinc-500 italic leading-relaxed">
-                      Conteúdo educativo disponibilizado para fins de estudo acadêmico. Direitos de imagem e vídeo reservados aos autores originais (Ensina Frain e parceiros). Uso sem fins lucrativos.
+                      Conteúdo educativo disponibilizado para fins de estudo acadêmico. Direitos de imagem e vídeo reservados aos autores originais. Uso sem fins lucrativos.
                     </p>
                   </div>
                 </div>
 
-                {/* 🚀 FÓRUM ENTRA AQUI! DEBAIXO DO MATERIAL DE APOIO 🚀 */}
-                <CommentSection questId="excel-basico" />
+                <CommentSection questId={activeCourse.id === 1 ? "excel-basico" : "educacao-financeira"} />
 
               </div>
 
@@ -208,35 +278,42 @@ export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
                 <div className="glass-card p-6 sticky top-28">
                   <h3 className="font-bold text-lg mb-4 flex items-center justify-between">
                     Conteúdo do Curso
-                    <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded font-mono">{completedModules}/3</span>
+                    <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded font-mono">{getActiveModules()}/{totalCourseModules}</span>
                   </h3>
                   <div className="space-y-3 mb-8">
-                    {courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.modules.map((mod, idx) => (
-                      <div 
-                        key={idx} 
-                        onClick={() => setCurrentVideoIndex(idx)}
-                        className={`p-4 rounded-xl border transition-colors cursor-pointer group flex items-start gap-3 ${
-                          currentVideoIndex === idx 
-                          ? "border-primary bg-primary/20" 
-                          : idx < completedModules 
-                            ? "border-primary/50 bg-primary/10" 
-                            : "border-white/5 bg-white/5 hover:bg-white/10"
-                        }`}
-                      >
-                        {idx < completedModules ? (
-                           <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5 text-primary" />
-                        ) : (
-                           <PlayCircle className={`w-5 h-5 shrink-0 mt-0.5 ${idx === currentVideoIndex ? "text-primary" : "text-zinc-600 group-hover:text-zinc-400"}`} />
-                        )}
-                        <div>
-                          <h4 className={`text-sm font-bold ${idx <= completedModules || idx === currentVideoIndex ? "text-white" : "text-zinc-400 group-hover:text-white"} transition-colors`}>{idx + 1}. {mod.title}</h4>
-                          <p className="text-xs text-zinc-500 font-mono mt-1">{mod.duration}</p>
+                    {courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.modules.map((mod, idx) => {
+                      const isModImage = courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.videos[idx]?.includes("img") || courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.videos[idx]?.includes("conclusao") || courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.videos[idx]?.match(/\.(jpeg|jpg|gif|png)$/i);
+                      const isModCanva = courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.videos[idx]?.includes("canva.com");
+                      
+                      return (
+                        <div 
+                          key={idx} 
+                          onClick={() => setCurrentVideoIndex(idx)}
+                          className={`p-4 rounded-xl border transition-colors cursor-pointer group flex items-start gap-3 ${
+                            currentVideoIndex === idx 
+                            ? "border-primary bg-primary/20" 
+                            : idx < getActiveModules() 
+                              ? "border-primary/50 bg-primary/10" 
+                              : "border-white/5 bg-white/5 hover:bg-white/10"
+                          }`}
+                        >
+                          {idx < getActiveModules() ? (
+                             <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5 text-primary" />
+                          ) : (
+                             isModImage ? (idx === totalCourseModules - 1 ? <Trophy className={`w-5 h-5 shrink-0 mt-0.5 ${idx === currentVideoIndex ? "text-yellow-400" : "text-zinc-600 group-hover:text-yellow-400"}`} /> : <ImageIcon className={`w-5 h-5 shrink-0 mt-0.5 ${idx === currentVideoIndex ? "text-primary" : "text-zinc-600 group-hover:text-zinc-400"}`} />)
+                             : isModCanva ? <FileText className={`w-5 h-5 shrink-0 mt-0.5 ${idx === currentVideoIndex ? "text-primary" : "text-zinc-600 group-hover:text-zinc-400"}`} />
+                             : <PlayCircle className={`w-5 h-5 shrink-0 mt-0.5 ${idx === currentVideoIndex ? "text-primary" : "text-zinc-600 group-hover:text-zinc-400"}`} />
+                          )}
+                          <div>
+                            <h4 className={`text-sm font-bold ${idx <= getActiveModules() || idx === currentVideoIndex ? "text-white" : "text-zinc-400 group-hover:text-white"} transition-colors`}>{idx + 1}. {mod.title}</h4>
+                            <p className="text-xs text-zinc-500 font-mono mt-1">{mod.duration}</p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                   
-                  {completedModules < 3 ? (
+                  {getActiveModules() < totalCourseModules ? (
                     <button onClick={handleCompleteLesson} className="w-full py-3.5 bg-primary text-white font-bold rounded-xl neon-glow-purple hover:brightness-110 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-sm">
                       <CheckCircle2 className="w-5 h-5" /> Concluir Etapa (+50 XP)
                     </button>

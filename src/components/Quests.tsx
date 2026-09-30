@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, ChevronRight, ArrowLeft, Book, CheckCircle2, FileText, PlayCircle, Copyright, ExternalLink, ImageIcon, Trophy } from "lucide-react";
+import { Lock, ChevronRight, ArrowLeft, Book, CheckCircle2, FileText, PlayCircle, ExternalLink } from "lucide-react";
 import { supabase } from '@/lib/supabaseClient';
 import CommentSection from "./CommentSection";
 import { courseDatabase, initialCourses } from "@/data/questsData"; 
@@ -39,6 +39,15 @@ export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
   const getActiveProgress = () => activeCourse?.id === 1 ? course1Progress : financeProgress;
   const getActiveModules = () => activeCourse?.id === 1 ? course1Modules : financeModules;
 
+  // 🔥 INTELIGÊNCIA: Conta apenas os módulos que NÃO são "em-breve"
+  const totalAvailableMods = activeCourse 
+    ? courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.videos.filter(v => !v.includes("em-breve")).length 
+    : 0;
+
+  const totalCourseModules = activeCourse 
+    ? courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.modules.length 
+    : 0;
+
   const handleCompleteLesson = async () => {
     if (currentVideoIndex !== getActiveModules()) return;
 
@@ -60,19 +69,25 @@ export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
         if (novoXp >= novoLevel * 500) novoLevel += 1;
 
         let updateData: any = { xp: novoXp, level: novoLevel };
-        const totalMods = courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.modules.length || 1;
+        
+        // Usa o total disponível para o cálculo de 100%
+        const maxMods = totalAvailableMods || 1;
 
         if (activeCourse.id === 1) {
-            const newMods = (profile.estrategia_modules || 0) + 1;
+            let newMods = (profile.estrategia_modules || 0) + 1;
+            if (newMods > maxMods) newMods = maxMods; // Trava de segurança
+            
             updateData.estrategia_modules = newMods;
-            updateData.estrategia_progress = Math.round((newMods / totalMods) * 100);
+            updateData.estrategia_progress = Math.round((newMods / maxMods) * 100);
             
             setCourse1Modules(newMods);
             setCourse1Progress(updateData.estrategia_progress);
         } else if (activeCourse.id === 2) {
-            const newMods = (profile.finance_modules || 0) + 1;
+            let newMods = (profile.finance_modules || 0) + 1;
+            if (newMods > maxMods) newMods = maxMods; 
+
             updateData.finance_modules = newMods;
-            updateData.finance_progress = Math.round((newMods / totalMods) * 100);
+            updateData.finance_progress = Math.round((newMods / maxMods) * 100);
             
             setFinanceModules(newMods);
             setFinanceProgress(updateData.finance_progress);
@@ -82,7 +97,8 @@ export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
         
         if (onXpGain) onXpGain();
 
-        if (currentVideoIndex + 1 < totalMods) {
+        // Só avança o vídeo se o próximo também estiver disponível
+        if (currentVideoIndex + 1 < maxMods) {
           setCurrentVideoIndex(currentVideoIndex + 1);
         }
       }
@@ -97,8 +113,6 @@ export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
   const isYouTube = currentMedia?.includes("youtube.com");
   const isVimeo = currentMedia?.includes("vimeo.com");
   
-  const totalCourseModules = activeCourse ? courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.modules.length : 0;
-
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-100 p-4 md:p-6 font-sans">
       <AnimatePresence mode="wait">
@@ -156,7 +170,7 @@ export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
                 {isVimeo ? (
                   <iframe src={currentMedia} className="w-full h-full absolute top-0 left-0 border-none" allow="autoplay; fullscreen" allowFullScreen></iframe>
                 ) : isYouTube ? (
-                  <iframe className="w-full h-full object-cover" src={currentMedia} allowFullScreen></iframe>
+                  <iframe src={currentMedia} className="w-full h-full absolute top-0 left-0 border-none" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen></iframe>
                 ) : isCanva ? (
                   <iframe className="w-full h-full absolute top-0 left-0 border-none" src={currentMedia} allowFullScreen></iframe>
                 ) : isImage ? (
@@ -168,28 +182,36 @@ export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
               
               <div className="lg:col-span-1 glass-card p-5 md:p-6 sticky top-4 md:top-28">
                 <h3 className="font-bold text-lg mb-4 flex items-center justify-between">
-                  Módulos <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded font-mono">{getActiveModules()}/{totalCourseModules}</span>
+                  Módulos <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded font-mono">{getActiveModules()}/{totalAvailableMods}</span>
                 </h3>
                 
                 <div className="space-y-3 mb-8">
                   {courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.modules.map((mod, idx) => {
+                    // Checa se o vídeo atrelado a esse módulo é o em-breve
+                    const videoUrl = courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.videos[idx] || "";
+                    const isPlaceholder = videoUrl.includes("em-breve");
+                    
                     const isCompleted = idx < getActiveModules();
                     const isCurrent = idx === currentVideoIndex;
-                    const isLocked = idx > getActiveModules();
+                    const isLocked = idx > getActiveModules() || isPlaceholder;
 
                     return (
                       <div 
                         key={idx} 
-                        onClick={() => !isLocked && setCurrentVideoIndex(idx)} 
+                        onClick={() => !isLocked && !isPlaceholder && setCurrentVideoIndex(idx)} 
                         className={`p-3 rounded-xl border flex items-center gap-3 transition-colors ${
-                          isCurrent 
-                            ? "border-primary bg-primary/20 cursor-pointer" 
-                            : isCompleted 
-                              ? "border-primary/50 bg-primary/10 cursor-pointer" 
-                              : "border-white/5 bg-white/5 opacity-50 cursor-not-allowed" 
+                          isPlaceholder 
+                            ? "border-white/5 bg-[#0a0a0f] opacity-40 cursor-not-allowed grayscale" // Visual para módulo futuro
+                            : isCurrent 
+                              ? "border-primary bg-primary/20 cursor-pointer" 
+                              : isCompleted 
+                                ? "border-primary/50 bg-primary/10 cursor-pointer" 
+                                : "border-white/5 bg-white/5 opacity-50 cursor-not-allowed" 
                         }`}
                       >
-                        {isCompleted ? (
+                        {isPlaceholder ? (
+                          <Lock className="w-5 h-5 text-zinc-700" />
+                        ) : isCompleted ? (
                           <CheckCircle2 className="w-5 h-5 text-primary" />
                         ) : isLocked ? (
                           <Lock className="w-5 h-5 text-zinc-600" />
@@ -198,17 +220,19 @@ export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
                         )}
                         
                         <div className="flex-1">
-                          <h4 className={`text-sm font-bold ${isCurrent ? "text-white" : isCompleted ? "text-zinc-300" : "text-zinc-500"} line-clamp-1`}>
+                          <h4 className={`text-sm font-bold ${isCurrent ? "text-white" : isCompleted ? "text-zinc-300" : isPlaceholder ? "text-zinc-500" : "text-zinc-500"} line-clamp-1`}>
                             {mod.title}
                           </h4>
-                          <p className="text-xs text-zinc-500 font-mono mt-0.5">{mod.duration}</p>
+                          <p className="text-xs text-zinc-500 font-mono mt-0.5">
+                            {isPlaceholder ? "Em Desenvolvimento" : mod.duration}
+                          </p>
                         </div>
                       </div>
                     );
                   })}
                 </div>
                 
-                {getActiveModules() < totalCourseModules ? (
+                {getActiveModules() < totalAvailableMods ? (
                   <button 
                     onClick={handleCompleteLesson} 
                     disabled={currentVideoIndex !== getActiveModules()}

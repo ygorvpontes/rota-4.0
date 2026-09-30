@@ -4,7 +4,7 @@ export const courseDatabase = {
   1: { 
     description: "Bem-vindo ao treinamento Hackeando o Jogo Corporativo. Este módulo compila todo o conhecimento estratégico, Antes de aprender qualquer ferramenta, é preciso entender como funciona o ambiente corporativo. Neste módulo, o aluno desenvolve a mentalidade de um profissional de alto valor, aprendendo como agir, se comunicar e construir uma reputação positiva desde o primeiro dia.",
     videos: [
-      "https://player.vimeo.com/video/1231541151?h=aa61a730ab", // Aulão 1 (Vimeo)
+      "https://www.youtube.com/embed/gGDBPF0jOQw", // Aulão 1 (Vimeo)
       "/em-breve.png", // Aulão 2
       "/em-breve.png", // Aulão 3
     ],

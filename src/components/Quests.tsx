@@ -39,7 +39,6 @@ export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
   const getActiveProgress = () => activeCourse?.id === 1 ? course1Progress : financeProgress;
   const getActiveModules = () => activeCourse?.id === 1 ? course1Modules : financeModules;
 
-  // 🔥 INTELIGÊNCIA: Conta apenas os módulos que NÃO são "em-breve"
   const totalAvailableMods = activeCourse 
     ? courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.videos.filter(v => !v.includes("em-breve")).length 
     : 0;
@@ -70,12 +69,11 @@ export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
 
         let updateData: any = { xp: novoXp, level: novoLevel };
         
-        // Usa o total disponível para o cálculo de 100%
         const maxMods = totalAvailableMods || 1;
 
         if (activeCourse.id === 1) {
             let newMods = (profile.estrategia_modules || 0) + 1;
-            if (newMods > maxMods) newMods = maxMods; // Trava de segurança
+            if (newMods > maxMods) newMods = maxMods; 
             
             updateData.estrategia_modules = newMods;
             updateData.estrategia_progress = Math.round((newMods / maxMods) * 100);
@@ -97,7 +95,6 @@ export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
         
         if (onXpGain) onXpGain();
 
-        // Só avança o vídeo se o próximo também estiver disponível
         if (currentVideoIndex + 1 < maxMods) {
           setCurrentVideoIndex(currentVideoIndex + 1);
         }
@@ -114,7 +111,7 @@ export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
   const isVimeo = currentMedia?.includes("vimeo.com");
   
   return (
-    <div className="min-h-screen bg-[#09090b] text-zinc-100 p-4 md:p-6 font-sans">
+    <div className="min-h-screen bg-[#09090b] text-zinc-100 p-4 md:p-6 pb-12 font-sans">
       <AnimatePresence mode="wait">
         {!activeCourse ? (
           <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="max-w-4xl mx-auto space-y-8">
@@ -180,14 +177,14 @@ export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
                 )}
               </div>
               
-              <div className="lg:col-span-1 glass-card p-5 md:p-6 sticky top-4 md:top-28">
+              {/* CORREÇÃO DO SCROLL MOBILE AQUI: lg:sticky lg:top-28 em vez de sticky top-4 */}
+              <div className="lg:col-span-1 glass-card p-5 md:p-6 lg:sticky lg:top-28">
                 <h3 className="font-bold text-lg mb-4 flex items-center justify-between">
                   Módulos <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded font-mono">{getActiveModules()}/{totalAvailableMods}</span>
                 </h3>
                 
                 <div className="space-y-3 mb-8">
                   {courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.modules.map((mod, idx) => {
-                    // Checa se o vídeo atrelado a esse módulo é o em-breve
                     const videoUrl = courseDatabase[activeCourse.id as keyof typeof courseDatabase]?.videos[idx] || "";
                     const isPlaceholder = videoUrl.includes("em-breve");
                     
@@ -201,7 +198,7 @@ export default function Quests({ onXpGain }: { onXpGain?: () => void }) {
                         onClick={() => !isLocked && !isPlaceholder && setCurrentVideoIndex(idx)} 
                         className={`p-3 rounded-xl border flex items-center gap-3 transition-colors ${
                           isPlaceholder 
-                            ? "border-white/5 bg-[#0a0a0f] opacity-40 cursor-not-allowed grayscale" // Visual para módulo futuro
+                            ? "border-white/5 bg-[#0a0a0f] opacity-40 cursor-not-allowed grayscale" 
                             : isCurrent 
                               ? "border-primary bg-primary/20 cursor-pointer" 
                               : isCompleted 
